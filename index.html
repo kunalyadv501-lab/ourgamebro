@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>4-Lane Car Racing</title>
+<style>
+body{margin:0;overflow:hidden;background:#111;font-family:Arial;}
+canvas{display:block;margin:auto;background:#222;}
+#score{position:absolute;top:10px;left:10px;color:white;font-size:22px;}
+#startScreen,#gameOverScreen{
+position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);
+color:white;display:flex;flex-direction:column;justify-content:center;align-items:center;}
+button{padding:15px 30px;font-size:20px;cursor:pointer;}
+#controls{position:absolute;bottom:20px;width:100%;display:flex;justify-content:center;gap:20px;}
+</style>
+</head>
+<body>
+
+<div id="startScreen">
+<h1>4-Lane Car Racing</h1>
+<button id="startBtn">Start Game</button>
+</div>
+
+<div id="gameOverScreen" style="display:none">
+<h1>Game Over</h1>
+<p id="finalScore"></p>
+<button id="restartBtn">Restart</button>
+</div>
+
+<div id="score">Score: 0</div>
+
+<div id="controls">
+<button onclick="moveLeft()">⬅</button>
+<button onclick="moveRight()">➡</button>
+</div>
+
+<canvas id="gameCanvas" width="400" height="600"></canvas>
+
+<script>
+const canvas=document.getElementById("gameCanvas");
+const ctx=canvas.getContext("2d");
+const lanes=[50,150,250,350];
+let playerLane=1;
+let enemies=[];
+let score=0;
+let speed=5;
+let gameRunning=false;
+let enemyInterval,scoreInterval;
+
+// Images
+const playerCar=new Image();
+playerCar.src="images/player.png";
+
+const enemyCar=new Image();
+enemyCar.src="images/enemy.png";
+
+// Make sure images are loaded before game starts
+let imagesLoaded=0;
+playerCar.onload=()=>{imagesLoaded++;checkImages();}
+enemyCar.onload=()=>{imagesLoaded++;checkImages();}
+
+function checkImages(){
+  if(imagesLoaded==2){
+    document.getElementById("startBtn").disabled=false;
+  }
+}
+
+// Draw player
+function drawPlayer(){
+  ctx.drawImage(playerCar,lanes[playerLane]-25,480,50,100);
+}
+
+// Draw enemies
+function drawEnemies(){
+  for(let e of enemies){
+    ctx.drawImage(enemyCar,lanes[e.lane]-25,e.y,50,100);
+  }
+}
+
+// Move enemies
+function moveEnemies(){
+  for(let e of enemies){
+    e.y+=speed;
+    if(e.y+100>480 && e.lane==playerLane){
+      gameOver();
+    }
+  }
+  enemies=enemies.filter(e=>e.y<600);
+}
+
+// Create enemies (one per lane)
+function createEnemies(){
+  enemies=[];
+  for(let i=0;i<4;i++){
+    enemies.push({lane:i,y:-150});
+  }
+}
+
+// Update score
+function updateScore(){
+  score++;
+  document.getElementById("score").innerText="Score: "+score;
+  if(score%20==0)speed+=1;
+}
+
+// Main draw loop
+function gameLoop(){
+  ctx.clearRect(0,0,400,600);
+  // Optional lane lines
+  for(let i=1;i<4;i++){
+    ctx.fillStyle="#555";ctx.fillRect(lanes[i]-10,0,2,600);
+  }
+  drawPlayer();
+  drawEnemies();
+  moveEnemies();
+  if(gameRunning) requestAnimationFrame(gameLoop);
+}
+
+// Start game
+function startGame(){
+  document.getElementById("startScreen").style.display="none";
+  document.getElementById("gameOverScreen").style.display="none";
+  playerLane=1;enemies=[];score=0;speed=5;
+  gameRunning=true;
+  gameLoop();
+  enemyInterval=setInterval(createEnemies,2000);
+  scoreInterval=setInterval(updateScore,1000);
+}
+
+// Game over
+function gameOver(){
+  gameRunning=false;
+  clearInterval(enemyInterval);
+  clearInterval(scoreInterval);
+  document.getElementById("finalScore").innerText="Score: "+score;
+  document.getElementById("gameOverScreen").style.display="flex";
+}
+
+// Controls
+function moveLeft(){if(playerLane>0)playerLane--;}
+function moveRight(){if(playerLane<3)playerLane++;}
+
+// Keyboard
+document.addEventListener("keydown",e=>{
+  if(e.key=="ArrowLeft") moveLeft();
+  if(e.key=="ArrowRight") moveRight();
+});
+
+// Buttons
+document.getElementById("startBtn").addEventListener("click",startGame);
+document.getElementById("restartBtn").addEventListener("click",startGame);
+
+</script>
+</body>
+</html>
